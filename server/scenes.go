@@ -123,7 +123,9 @@ func (s *Scene) Snapshot() []Entity {
 
 	out := make([]Entity, 0, len(s.Entities))
 	for _, e := range s.Entities {
+		e.mu.Lock()
 		out = append(out, *e) // copy
+		e.mu.Unlock()
 	}
 	return out
 }
