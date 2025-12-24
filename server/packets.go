@@ -50,8 +50,8 @@ func GetField[T any](p *Packet, key string) (T, bool) {
 }
 
 type ServerInfoData struct {
-	Version         string `json:"version"`
-	ProtocolVersion int    `json:"protocol_version"`
+	Version  string `json:"version"`
+	Protocol int    `json:"protocol"`
 }
 
 type JoinRejectData struct {

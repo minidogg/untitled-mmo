@@ -11,8 +11,8 @@ const (
 )
 
 type NetworkOwner struct {
-	OwnerType OwnershipType
-	ClientID  string
+	OwnerType OwnershipType `json:"owner_type"`
+	ClientID  string        `json:"client_id,omitempty"`
 }
 
 // Entities
@@ -27,21 +27,22 @@ type EntityType int
 const (
 	PlayerEntity EntityType = iota
 	EnemyEntity
+	PlaceholderEntity
 )
 
 type Entity struct {
-	ID      EntityID
-	SceneID string
+	ID      EntityID `json:"id"`
+	SceneID string   `json:"scene_id"`
 
-	Position Vec2
-	Velocity Vec2
-	Friction float32
-	Static   bool
+	Position Vec2    `json:"position"`
+	Velocity Vec2    `json:"velocity"`
+	Friction float32 `json:"friction"`
+	Static   bool    `json:"static"`
 
-	EntityType EntityType
-	EntityData interface{}
+	EntityType EntityType  `json:"entity_type"`
+	EntityData interface{} `json:"entity_data"`
 
-	Owner NetworkOwner
+	Owner NetworkOwner `json:"networker_owner"`
 	Dirty bool
 
 	mu sync.RWMutex
@@ -54,13 +55,34 @@ func (entity *Entity) SetOwner(owner NetworkOwner) {
 	entity.Dirty = true
 }
 
+func CreateStaticPlaceholderEntity(id EntityID, scene_id string, x float32, y float32) *Entity {
+	return &Entity{
+		ID:      id,
+		SceneID: scene_id,
+
+		Position: Vec2{
+			X: x,
+			Y: y,
+		},
+		Velocity: Vec2{X: 0, Y: 0},
+
+		Friction: 1,
+		Static:   true,
+
+		EntityType: PlaceholderEntity,
+		EntityData: map[string]interface{}{
+			"entity_costume": "block",
+		},
+	}
+}
+
 // Tiles and tilemaps
 type TileID uint16
 
 type TileMap struct {
-	Width  int
-	Height int
-	Tiles  []TileID // row-major (y*Width + x)
+	Width  int      `json:"width"`
+	Height int      `json:"height"`
+	Tiles  []TileID `json:"tiles"` // row-major (y*Width + x)
 	mu     sync.RWMutex
 }
 
@@ -85,10 +107,10 @@ const (
 )
 
 type Scene struct {
-	ID       string
-	Type     SceneType
-	TileMap  *TileMap
-	Entities map[EntityID]*Entity
+	ID       string               `json:"id"`
+	Type     SceneType            `json:"type"`
+	TileMap  *TileMap             `json:"tile_map"`
+	Entities map[EntityID]*Entity `json:"entities"`
 	mu       sync.RWMutex
 }
 

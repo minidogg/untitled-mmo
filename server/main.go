@@ -14,8 +14,8 @@ var addr = flag.String("addr", "localhost:8080", "http service address")
 var upgrader = websocket.Upgrader{} // use default options
 
 var serverInfo = ServerInfoData{
-	Version:         "untitled-mmo-cl-0.1.0",
-	ProtocolVersion: 1,
+	Version:  "0.1.0",
+	Protocol: 1,
 }
 
 // Global scene manager
@@ -29,6 +29,8 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer c.Close()
+
+	fmt.Println("new connection!")
 
 	// currently not needed:
 	// ip := r.RemoteAddr
@@ -56,7 +58,7 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 			handshaked = true
 			protocol, ok := GetField[int](&msg, "protocol")
 			if ok {
-				if protocol == serverInfo.ProtocolVersion {
+				if protocol == serverInfo.Protocol {
 					c.WriteJSON(Packet{
 						Type: "server_info",
 						Data: serverInfo,
@@ -69,7 +71,7 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 					c.WriteJSON(Packet{
 						Type: "join_reject",
 						Data: JoinRejectData{
-							ProtocolVersion: serverInfo.ProtocolVersion,
+							ProtocolVersion: serverInfo.Protocol,
 							Version:         serverInfo.Version,
 							Message:         "Incorrect protocol version!",
 						},
@@ -79,7 +81,7 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 				c.WriteJSON(Packet{
 					Type: "join_reject",
 					Data: JoinRejectData{
-						ProtocolVersion: serverInfo.ProtocolVersion,
+						ProtocolVersion: serverInfo.Protocol,
 						Version:         serverInfo.Version,
 						Message:         "No protocol version was received!",
 					},
@@ -129,6 +131,9 @@ func initializeScenes() {
 
 	lobbyScene := sceneManager.CreateScene("lobby", SceneLobby, lobbyTilemap)
 	log.Printf("Created lobby scene with ID: %s (size: %dx%d)", lobbyScene.ID, lobbyTilemap.Width, lobbyTilemap.Height)
+
+	staticEntity := CreateStaticPlaceholderEntity(1238, "lobby", 0, 0)
+	lobbyScene.AddEntity(staticEntity)
 
 	// Create a dungeon scene - side-scrolling level with walls, floors, and platforms
 	dungeonTilemap := &TileMap{
