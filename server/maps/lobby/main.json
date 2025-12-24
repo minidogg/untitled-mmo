@@ -1,0 +1,6 @@
+{
+    "topleft":{"x":-200,"y":200},
+    "tilemap":"./maps/lobby/tilemap",
+    "name":"lobby",
+    "type":"Lobby"
+}

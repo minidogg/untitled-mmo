@@ -1,6 +1,11 @@
 package main
 
-import "sync"
+import (
+	"encoding/binary"
+	"log"
+	"os"
+	"sync"
+)
 
 // Network owner ship
 type OwnershipType int
@@ -196,4 +201,60 @@ func (sceneManager *SceneManager) CreateScene(sceneId string, sceneType SceneTyp
 	sceneManager.Scenes[sceneId] = scene
 	sceneManager.mu.Unlock()
 	return scene
+}
+
+func (tilemap *TileMap) WriteTileMapFile(filename string) {
+	tilemap.mu.RLock()
+	defer tilemap.mu.RUnlock()
+
+	f, err := os.Create(filename)
+	if err != nil {
+		log.Fatalf("failed to create file: %v", err)
+	}
+	defer f.Close()
+
+	err = binary.Write(f, binary.LittleEndian, struct {
+		Width  int32
+		Heigth int32
+	}{
+		Width:  int32(tilemap.Width),
+		Heigth: int32(tilemap.Height),
+	})
+	if err != nil {
+		log.Fatalf("failed to write binary data: %v", err)
+	}
+
+	err = binary.Write(f, binary.LittleEndian, tilemap.Tiles)
+	if err != nil {
+		log.Fatalf("failed to write binary data: %v", err)
+	}
+}
+
+func ReadTileMap(filename string) (*TileMap, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	header := struct {
+		Width  int32
+		Height int32
+	}{}
+
+	if err := binary.Read(file, binary.LittleEndian, &header); err != nil {
+		return nil, err
+	}
+
+	m := &TileMap{
+		Width:  int(header.Width),
+		Height: int(header.Height),
+		Tiles:  make([]TileID, header.Width*header.Height),
+	}
+
+	if err := binary.Read(file, binary.LittleEndian, &m.Tiles); err != nil {
+		return nil, err
+	}
+
+	return m, nil
 }
