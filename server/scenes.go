@@ -20,7 +20,7 @@ type EntityID uint64
 
 type Vec2 struct {
 	X float32 `json:"x"`
-	y float32 `json:"y"`
+	Y float32 `json:"y"`
 }
 
 type EntityType int
