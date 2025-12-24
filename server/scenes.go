@@ -19,7 +19,8 @@ type NetworkOwner struct {
 type EntityID uint64
 
 type Vec2 struct {
-	X, Y float32
+	X float32 `json:"x"`
+	y float32 `json:"y"`
 }
 
 type EntityType int
@@ -111,7 +112,9 @@ type Scene struct {
 	Type     SceneType            `json:"type"`
 	TileMap  *TileMap             `json:"tile_map"`
 	Entities map[EntityID]*Entity `json:"entities"`
-	mu       sync.RWMutex
+	TopLeft  Vec2                 `json:"top_left"`
+
+	mu sync.RWMutex
 }
 
 func (scene *Scene) GetEntity(id EntityID) (*Entity, bool) {
@@ -184,6 +187,10 @@ func (sceneManager *SceneManager) CreateScene(sceneId string, sceneType SceneTyp
 		Type:     sceneType,
 		TileMap:  tileMap,
 		Entities: make(map[EntityID]*Entity),
+		TopLeft: Vec2{
+			X: -200,
+			Y: 200,
+		},
 	}
 	sceneManager.mu.Lock()
 	sceneManager.Scenes[sceneId] = scene
