@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
-	lua "github.com/yuin/gopher-lua"
 )
 
 var addr = flag.String("addr", "localhost:8080", "http service address")
@@ -18,8 +17,6 @@ var serverInfo = ServerInfoData{
 	Version:  "0.1.0",
 	Protocol: 1,
 }
-
-var pluginManager PluginManager
 
 func socketHandler(w http.ResponseWriter, r *http.Request) {
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
@@ -66,7 +63,6 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 						Type: "server_info",
 						Data: serverInfo,
 					})
-					pluginManager.Bus.Emit("client_connect", lua.LString(client.ID))
 					// c.WriteJSON(Packet{
 					// 	Type: "load_scene",
 					// 	Data: sceneManager.Scenes["lobby"],
@@ -103,32 +99,6 @@ func home(w http.ResponseWriter, r *http.Request) {
 func main() {
 	flag.Parse()
 	log.SetFlags(0)
-
-	pluginManager = *NewPluginManager()
-	defer pluginManager.Close()
-
-	pluginManager.L.SetGlobal("send_packet", pluginManager.L.NewFunction(func(L *lua.LState) int {
-		fmt.Println(L.ToString(1))
-		lpacket := L.ToTable(2)
-
-		result := Clients.SendPacketToID(
-			ClientID(L.ToString(1)),
-			Packet{
-				Type: lpacket.RawGetString("type").String(),
-				Data: L.GetMetatable(lpacket.RawGetString("data")),
-			},
-		)
-		result_int := 0
-		if result == true {
-			result_int = 1
-		}
-
-		return (result_int)
-	}))
-
-	if err := pluginManager.LoadPlugins("./plugins"); err != nil {
-		panic(err)
-	}
 
 	http.HandleFunc("/server", socketHandler)
 	http.HandleFunc("/", home)
