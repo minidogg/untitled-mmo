@@ -18,6 +18,7 @@ var serverInfo = ServerInfoData{
 	Protocol: 1,
 }
 var worldManager = NewWorldManager()
+var lobbyMap = ""
 
 func socketHandler(w http.ResponseWriter, r *http.Request) {
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
@@ -64,10 +65,11 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 						Type: "server_info",
 						Data: serverInfo,
 					})
-					// c.WriteJSON(Packet{
-					// 	Type: "load_scene",
-					// 	Data: sceneManager.Scenes["lobby"],
-					// })
+					// todo: make a map specific map sending function
+					c.WriteJSON(Packet{
+						Type: "load_map",
+						Data: worldManager.ActiveWorlds[lobbyMap].Rooms["lobby_main"],
+					})
 				} else {
 					c.WriteJSON(Packet{
 						Type: "join_reject",
@@ -102,6 +104,7 @@ func main() {
 	log.SetFlags(0)
 
 	worldManager.LoadWorldMapFolder("./maps")
+	lobbyMap = worldManager.CreateNewMap(worldManager.BaseWorlds["maps/lobby.json"])
 
 	http.HandleFunc("/server", socketHandler)
 	http.HandleFunc("/", home)

@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/google/uuid"
 )
 
 // Entities
@@ -42,13 +44,19 @@ type Entity struct {
 	mu sync.RWMutex
 }
 
+type WorldType int
+
+const (
+	Lobby = iota
+)
+
 // Rooms & Worlds
 type World struct {
-	rooms map[string]Room `json:"rooms"`
+	Type  WorldType       `json:"type"`
+	Rooms map[string]Room `json:"rooms"`
 }
 type Room struct {
 	ID       string   `json:"id"`
-	Type     int      `json:"type"`
 	Entities []Entity `json:"entities"`
 	TileMap  TileMap  `json:"tile_map"`
 }
@@ -59,7 +67,8 @@ type TileMapLayer map[string][]int
 
 // World Manager
 type WorldManager struct {
-	WorldMap map[string]World
+	BaseWorlds   map[string]World
+	ActiveWorlds map[string]World
 }
 
 func (wm *WorldManager) LoadWorld(file_path string) World {
@@ -67,7 +76,7 @@ func (wm *WorldManager) LoadWorld(file_path string) World {
 	if err != nil {
 		fmt.Println("error loading world ", file_path, err)
 	}
-	wm.WorldMap[strings.ReplaceAll(file_path, "\\", "/")] = world
+	wm.BaseWorlds[strings.ReplaceAll(file_path, "\\", "/")] = world
 
 	return world
 }
@@ -90,8 +99,15 @@ func (wm *WorldManager) LoadWorldMapFolder(rootDir string) error {
 	})
 }
 
+func (wm *WorldManager) CreateNewMap(baseWorld World) string {
+	id := uuid.NewString()
+	wm.ActiveWorlds[id] = baseWorld // should create a new clone of the base world i think
+	return id
+}
+
 func NewWorldManager() WorldManager {
 	return WorldManager{
-		WorldMap: make(map[string]World),
+		BaseWorlds:   make(map[string]World),
+		ActiveWorlds: make(map[string]World),
 	}
 }
