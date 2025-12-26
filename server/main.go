@@ -108,7 +108,7 @@ func main() {
 	defer pluginManager.Close()
 
 	pluginManager.L.SetGlobal("send_packet", pluginManager.L.NewFunction(func(L *lua.LState) int {
-		fmt.Println(L.ToString(1)) // this returns nothing for some reason
+		fmt.Println(L.ToString(1))
 		lpacket := L.ToTable(2)
 
 		result := Clients.SendPacketToID(
