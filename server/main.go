@@ -110,10 +110,14 @@ func main() {
 	pluginManager.L.SetGlobal("send_packet", pluginManager.L.NewFunction(func(L *lua.LState) int {
 		fmt.Println(L.ToString(1)) // this returns nothing for some reason
 		lpacket := L.ToTable(2)
-		result := Clients.SendPacketToID(ClientID(L.ToString(1)), Packet{
-			Type: lpacket.RawGetString("type").String(),
-			Data: lpacket.RawGetString("data"),
-		})
+
+		result := Clients.SendPacketToID(
+			ClientID(L.ToString(1)),
+			Packet{
+				Type: lpacket.RawGetString("type").String(),
+				Data: L.GetMetatable(lpacket.RawGetString("data")),
+			},
+		)
 		result_int := 0
 		if result == true {
 			result_int = 1
