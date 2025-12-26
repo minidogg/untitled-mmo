@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"io/fs"
+	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -56,14 +59,39 @@ type TileMapLayer map[string][]int
 
 // World Manager
 type WorldManager struct {
-	WorldMap
+	WorldMap map[string]World
 }
 
-func (*WorldManager) LoadWorld(file_path string) World {
+func (wm *WorldManager) LoadWorld(file_path string) World {
 	world, err := ReadJSONFile[World](file_path)
 	if err != nil {
 		fmt.Println("error loading world ", file_path, err)
 	}
+	wm.WorldMap[strings.ReplaceAll(file_path, "\\", "/")] = world
 
 	return world
+}
+
+func (wm *WorldManager) LoadWorldMapFolder(rootDir string) error {
+	return filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			// Handle errors that occur while trying to visit a path
+			return err
+		}
+
+		// Check if it is a regular file and ends with .json
+		if !d.IsDir() && strings.HasSuffix(strings.ToLower(d.Name()), ".json") {
+			fmt.Println("Loading world", path)
+			wm.LoadWorld(path)
+			fmt.Println("Loaded World", path)
+		}
+
+		return nil
+	})
+}
+
+func NewWorldManager() WorldManager {
+	return WorldManager{
+		WorldMap: make(map[string]World),
+	}
 }

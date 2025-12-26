@@ -17,6 +17,7 @@ var serverInfo = ServerInfoData{
 	Version:  "0.1.0",
 	Protocol: 1,
 }
+var worldManager = NewWorldManager()
 
 func socketHandler(w http.ResponseWriter, r *http.Request) {
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
@@ -99,6 +100,8 @@ func home(w http.ResponseWriter, r *http.Request) {
 func main() {
 	flag.Parse()
 	log.SetFlags(0)
+
+	worldManager.LoadWorldMapFolder("./maps")
 
 	http.HandleFunc("/server", socketHandler)
 	http.HandleFunc("/", home)
