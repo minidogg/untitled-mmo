@@ -3,20 +3,12 @@ package main
 import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
-	lua "github.com/yuin/gopher-lua"
 )
 
-type ClientID string
+type ClientID = string
 type Client struct {
 	ID     ClientID
 	Socket *websocket.Conn
-}
-
-func (cid ClientID) String() string {
-	return string(cid)
-}
-func (cid ClientID) Type() lua.LValueType {
-	return lua.LTString
 }
 
 type ClientMap map[ClientID]Client

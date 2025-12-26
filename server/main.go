@@ -66,7 +66,7 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 						Type: "server_info",
 						Data: serverInfo,
 					})
-					pluginManager.Bus.Emit("client_connect", client.ID)
+					pluginManager.Bus.Emit("client_connect", lua.LString(client.ID))
 					// c.WriteJSON(Packet{
 					// 	Type: "load_scene",
 					// 	Data: sceneManager.Scenes["lobby"],
@@ -108,6 +108,7 @@ func main() {
 	defer pluginManager.Close()
 
 	pluginManager.L.SetGlobal("send_packet", pluginManager.L.NewFunction(func(L *lua.LState) int {
+		fmt.Println(L.ToString(1)) // this returns nothing for some reason
 		lpacket := L.ToTable(2)
 		result := Clients.SendPacketToID(ClientID(L.ToString(1)), Packet{
 			Type: lpacket.RawGetString("type").String(),
