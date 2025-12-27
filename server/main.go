@@ -65,9 +65,9 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 						Type: "server_info",
 						Data: serverInfo,
 					})
-					// todo: make a map specific map sending function
+					// todo: make a player map specific room sending function
 					c.WriteJSON(Packet{
-						Type: "load_map",
+						Type: "load_room",
 						Data: worldManager.ActiveWorlds[lobbyMap].Rooms["lobby_main"],
 					})
 				} else {
