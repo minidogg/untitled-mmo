@@ -20,6 +20,11 @@ type Vec2 struct {
 
 type EntityType int
 
+type EntityState struct {
+	Grounded  bool   `json:"grounded"`
+	Animation string `json:"animation"`
+}
+
 const (
 	PlayerEntity EntityType = iota
 	EnemyEntity
@@ -30,12 +35,12 @@ type Entity struct {
 	ID      EntityID `json:"id"`
 	SceneID string   `json:"scene_id"`
 
-	Position Vec2    `json:"position"`
-	Velocity Vec2    `json:"velocity"`
-	Size     float32 `json:"size"`
-	Friction float32 `json:"friction"`
-	Static   bool    `json:"static"`
-	Grounded bool    `json:"grounded"`
+	Position Vec2        `json:"position"`
+	Velocity Vec2        `json:"velocity"`
+	Size     float32     `json:"size"`
+	Friction float32     `json:"friction"`
+	Static   bool        `json:"static"`
+	State    EntityState `json:"grounded"`
 
 	EntityType EntityType  `json:"entity_type"`
 	EntityData interface{} `json:"entity_data"`
