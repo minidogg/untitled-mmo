@@ -27,7 +27,7 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 		log.Print("upgrade:", err)
 		return
 	}
-	defer c.Close()
+	// defer c.Close()
 
 	fmt.Println("new connection!")
 
@@ -62,10 +62,23 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 				if protocol == serverInfo.Protocol {
 
 					c.WriteJSON(Packet{
+						Type: "client_id_assign",
+						Data: client.ID,
+					})
+
+					c.WriteJSON(Packet{
 						Type: "server_info",
 						Data: serverInfo,
 					})
-					// todo: make a player map specific room sending function
+
+					var e *Entity = &Entity{
+						Client:     client,
+						EntityType: PlayerEntity,
+					}
+
+					client.Entity = e
+					worldManager.CreateEntity(e, lobbyMap, "lobby_main")
+
 					c.WriteJSON(Packet{
 						Type: "load_room",
 						Data: worldManager.ActiveWorlds[lobbyMap].Rooms["lobby_main"],
@@ -74,9 +87,9 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 					c.WriteJSON(Packet{
 						Type: "join_reject",
 						Data: JoinRejectData{
-							ProtocolVersion: serverInfo.Protocol,
-							Version:         serverInfo.Version,
-							Message:         "Incorrect protocol version!",
+							Protocol: serverInfo.Protocol,
+							Version:  serverInfo.Version,
+							Message:  "Incorrect protocol version!",
 						},
 					})
 				}
@@ -84,9 +97,9 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 				c.WriteJSON(Packet{
 					Type: "join_reject",
 					Data: JoinRejectData{
-						ProtocolVersion: serverInfo.Protocol,
-						Version:         serverInfo.Version,
-						Message:         "No protocol version was received!",
+						Protocol: serverInfo.Protocol,
+						Version:  serverInfo.Version,
+						Message:  "No protocol version was received!",
 					},
 				})
 			}

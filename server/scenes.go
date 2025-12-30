@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -35,19 +37,18 @@ type Entity struct {
 	ID      EntityID `json:"id"`
 	SceneID string   `json:"scene_id"`
 
+	Input  Input   `json:"input"`
+	Client *Client `json:"client"`
+
 	Position Vec2        `json:"position"`
 	Velocity Vec2        `json:"velocity"`
-	Size     float32     `json:"size"`
-	Friction float32     `json:"friction"`
-	Static   bool        `json:"static"`
 	State    EntityState `json:"state"`
 
 	EntityType EntityType  `json:"entity_type"`
 	EntityData interface{} `json:"entity_data"`
 
-	Dirty bool
-
-	mu sync.RWMutex
+	Dirty  bool
+	Remove bool
 }
 
 type WorldType int
@@ -58,13 +59,17 @@ const (
 
 // Rooms & Worlds
 type World struct {
-	Type  WorldType       `json:"type"`
-	Rooms map[string]Room `json:"rooms"`
+	Type  WorldType        `json:"type"`
+	Rooms map[string]*Room `json:"rooms"`
 }
 type Room struct {
-	ID       string   `json:"id"`
-	Entities []Entity `json:"entities"`
-	TileMap  TileMap  `json:"tile_map"`
+	ID       string    `json:"id"`
+	Entities []*Entity `json:"entities"`
+	TileMap  TileMap   `json:"tile_map"`
+
+	tick    uint64
+	running bool
+	mu      sync.RWMutex
 }
 
 // Tile Maps
@@ -82,8 +87,9 @@ func (wm *WorldManager) LoadWorld(file_path string) World {
 	if err != nil {
 		fmt.Println("error loading world ", file_path, err)
 	}
-	wm.BaseWorlds[strings.ReplaceAll(file_path, "\\", "/")] = world
 
+	key := strings.ReplaceAll(file_path, "\\", "/")
+	wm.BaseWorlds[key] = world
 	return world
 }
 
@@ -107,7 +113,25 @@ func (wm *WorldManager) LoadWorldMapFolder(rootDir string) error {
 
 func (wm *WorldManager) CreateNewMap(baseWorld World) string {
 	id := uuid.NewString()
-	wm.ActiveWorlds[id] = baseWorld // should create a new clone of the base world i think
+
+	newWorld := baseWorld
+	newWorld.Rooms = make(map[string]*Room)
+
+	for k, room := range baseWorld.Rooms {
+		room.running = false
+		newWorld.Rooms[k] = room
+	}
+
+	wm.ActiveWorlds[id] = newWorld
+
+	for roomID := range newWorld.Rooms {
+		room := newWorld.Rooms[roomID]
+		go room.Run()
+		newWorld.Rooms[roomID] = room
+	}
+
+	wm.ActiveWorlds[id] = newWorld
+	fmt.Println("World activated")
 	return id
 }
 
@@ -115,5 +139,104 @@ func NewWorldManager() WorldManager {
 	return WorldManager{
 		BaseWorlds:   make(map[string]World),
 		ActiveWorlds: make(map[string]World),
+	}
+}
+
+func (wm *WorldManager) CreateEntity(entityData *Entity, worldName, roomName string) {
+	world, ok := wm.ActiveWorlds[worldName]
+	if !ok {
+		fmt.Println("Active world not found: " + worldName)
+		return
+	}
+	room, ok := world.Rooms[roomName]
+	if !ok {
+		fmt.Println("Room not found: " + roomName)
+		return
+	}
+
+	room.mu.Lock()
+	defer room.mu.Unlock()
+
+	room.Entities = append(room.Entities, entityData)
+}
+
+func (r *Room) BroadcastSnapshot(tick uint64) {
+	var entitySnapshots []EntitySnapshot
+	var activeEntities []*Entity = r.Entities
+
+	for i := range r.Entities {
+		e := r.Entities[i]
+
+		if e.Remove {
+			activeEntities = slices.Delete(r.Entities, i, i)
+			continue
+		}
+
+		entitySnapshots = append(entitySnapshots, EntitySnapshot{
+			ID:       e.ID,
+			ClientID: e.Client.ID,
+			Input:    e.Input,
+
+			Position: e.Position,
+			Velocity: e.Velocity,
+			State:    e.State,
+
+			EntityType: e.EntityType,
+			EntityData: e.EntityData,
+		})
+	}
+
+	r.Entities = activeEntities
+
+	for i := range r.Entities {
+		e := r.Entities[i]
+
+		if e.EntityType != PlayerEntity || e.Client.Socket == nil {
+			continue
+		}
+
+		err := e.Client.Socket.WriteJSON(Packet{
+			Type: "room_snapshot",
+			Data: SnapshotData{
+				Version:    serverInfo.Version,
+				Protocol:   serverInfo.Protocol,
+				ServerTick: tick,
+				SceneID:    r.ID,
+				Entities:   entitySnapshots,
+			},
+		})
+
+		if err != nil {
+			fmt.Println("Snapshot to client failed")
+		}
+	}
+}
+
+func (r *Room) StepRoomPhysics() {
+	for i := range r.Entities {
+		r.Entities[i].StepPhysics()
+	}
+}
+
+func (r *Room) Run() {
+	r.mu.Lock()
+	if r.running {
+		r.mu.Unlock()
+		return
+	}
+	r.running = true
+	r.mu.Unlock()
+
+	ticker := time.NewTicker(time.Second / TicksPerSecond)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		r.mu.Lock()
+
+		r.StepRoomPhysics()
+		r.BroadcastSnapshot(r.tick)
+		r.tick++
+
+		r.mu.Unlock()
 	}
 }

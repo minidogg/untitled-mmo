@@ -55,7 +55,28 @@ type ServerInfoData struct {
 }
 
 type JoinRejectData struct {
-	Version         string `json:"version"`
-	ProtocolVersion int    `json:"protocol_version"`
-	Message         string `json:"message"`
+	Version  string `json:"version"`
+	Protocol int    `json:"protocol"`
+	Message  string `json:"message"`
+}
+
+type EntitySnapshot struct {
+	ID       EntityID `json:"id"`
+	ClientID ClientID `json:"client_id"`
+	Input    Input    `json:"input"`
+
+	Position Vec2        `json:"position"`
+	Velocity Vec2        `json:"velocity"`
+	State    EntityState `json:"state"`
+
+	EntityType EntityType  `json:"entity_type"`
+	EntityData interface{} `json:"entity_data"`
+}
+
+type SnapshotData struct {
+	Version    string           `json:"version"`
+	Protocol   int              `json:"protocol"`
+	ServerTick uint64           `json:"server_tick"`
+	SceneID    string           `json:"scene_id"`
+	Entities   []EntitySnapshot `json:"entities"`
 }
