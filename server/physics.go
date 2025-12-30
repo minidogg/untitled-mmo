@@ -17,7 +17,7 @@ type Input struct {
 	Jump  bool
 }
 
-func (val float32) Clamp(min, max float32) float32 {
+func Clamp(val, min, max float32) float32 {
     if val < min {
         return min
     }
@@ -35,7 +35,7 @@ func Step(p *Entity, input Input, tiles TileMap) {
 		p.Velocity.X += Accel
 	}
 
-	p.Velocity.X.Clamp(-MaxSpeedX, MaxSpeedX)
+	p.Velocity.X = Clamp(p.Velocity.X, -MaxSpeedX, MaxSpeedX)
 
 	if !input.Left && !input.Right {
 		p.Velocity.X = (p.Velocity.X * Friction) / 100
@@ -51,6 +51,6 @@ func Step(p *Entity, input Input, tiles TileMap) {
 		p.Grounded = false
 	}
 
-	p.X += p.VX
-	p.Y += p.VY
+	p.Position.X += p.Velocity.X
+	p.Position.Y += p.Velocity.Y
 }

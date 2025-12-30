@@ -35,6 +35,7 @@ type Entity struct {
 	Size     float32 `json:"size"`
 	Friction float32 `json:"friction"`
 	Static   bool    `json:"static"`
+	Grounded bool    `json:"grounded"`
 
 	EntityType EntityType  `json:"entity_type"`
 	EntityData interface{} `json:"entity_data"`
