@@ -67,6 +67,7 @@ type EntitySnapshot struct {
 
 	Position Vec2        `json:"position"`
 	Velocity Vec2        `json:"velocity"`
+	Size     Vec2        `json:"size"`
 	State    EntityState `json:"state"`
 
 	EntityType EntityType  `json:"entity_type"`

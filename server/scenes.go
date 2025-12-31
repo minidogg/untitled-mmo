@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
-	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -42,6 +41,7 @@ type Entity struct {
 
 	Position Vec2        `json:"position"`
 	Velocity Vec2        `json:"velocity"`
+	Size     Vec2        `json:"size"`
 	State    EntityState `json:"state"`
 
 	EntityType EntityType  `json:"entity_type"`
@@ -74,7 +74,8 @@ type Room struct {
 
 // Tile Maps
 type TileMap map[string]TileMapLayer
-type TileMapLayer map[string][]int
+type TileMapLayer map[string][]float32
+type CollisionMap []Vec2
 
 // World Manager
 type WorldManager struct {
@@ -162,14 +163,15 @@ func (wm *WorldManager) CreateEntity(entityData *Entity, worldName, roomName str
 
 func (r *Room) BroadcastSnapshot(tick uint64) {
 	var entitySnapshots []EntitySnapshot
-	var activeEntities []*Entity = r.Entities
+	var activeEntities []*Entity = []*Entity{}
 
 	for i := range r.Entities {
 		e := r.Entities[i]
 
 		if e.Remove {
-			activeEntities = slices.Delete(r.Entities, i, i)
 			continue
+		} else {
+			activeEntities = append(activeEntities, e)
 		}
 
 		entitySnapshots = append(entitySnapshots, EntitySnapshot{
@@ -213,8 +215,10 @@ func (r *Room) BroadcastSnapshot(tick uint64) {
 }
 
 func (r *Room) StepRoomPhysics() {
+	var cmap CollisionMap = BuildCollisionMap(r.TileMap["c"])
+
 	for i := range r.Entities {
-		r.Entities[i].StepPhysics()
+		r.Entities[i].StepPhysics(cmap)
 	}
 }
 

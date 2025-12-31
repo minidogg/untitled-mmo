@@ -74,6 +74,10 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 					var e *Entity = &Entity{
 						Client:     client,
 						EntityType: PlayerEntity,
+						Size: Vec2{
+							X: 13.0,
+							Y: 21.0,
+						},
 					}
 
 					client.Entity = e
