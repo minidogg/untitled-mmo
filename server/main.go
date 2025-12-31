@@ -108,6 +108,17 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 				})
 			}
 
+		case "player_tick":
+			if client.Entity != nil {
+				input, ok := GetField[Input](&msg, "input")
+
+				if !ok {
+					fmt.Println("Invalid or nonexistent input object from client")
+					break
+				}
+
+				client.Entity.Input = input
+			}
 		}
 	}
 }
