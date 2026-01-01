@@ -5,9 +5,9 @@ const (
 	TileSize       = 16
 
 	Gravity      = -0.15
-	Accel        = 8.0
+	Accel        = 0.8
 	Friction     = 0.82
-	MaxSpeedX    = 30.0
+	MaxSpeedX    = 10.0
 	JumpImpulse  = 90.0
 	MaxFallSpeed = 5.0
 )
