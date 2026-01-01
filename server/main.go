@@ -110,14 +110,16 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 
 		case "player_tick":
 			if client.Entity != nil {
-				input, ok := GetField[Input](&msg, "input")
+				input, ok := GetField[map[string]interface{}](&msg, "input")
 
 				if !ok {
 					fmt.Println("Invalid or nonexistent input object from client")
 					break
 				}
 
-				client.Entity.Input = input
+				client.Entity.Input.Left = input["left"].(float64) != 0
+				client.Entity.Input.Right = input["right"].(float64) != 0
+				client.Entity.Input.Jump = input["jump"].(float64) != 0
 			}
 		}
 	}
