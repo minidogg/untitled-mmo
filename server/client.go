@@ -12,7 +12,7 @@ type Client struct {
 	Entity *Entity
 }
 
-type ClientMap map[ClientID]Client
+type ClientMap map[ClientID]*Client
 type ClientStore struct {
 	ClientMap ClientMap
 }
@@ -22,13 +22,13 @@ var Clients = ClientStore{
 }
 
 func (cs *ClientStore) GenerateClientFromSocket(socket *websocket.Conn) *Client {
-	c := Client{
+	c := &Client{
 		ID:     ClientID(uuid.NewString()),
 		Socket: socket,
 	}
 	cs.ClientMap[c.ID] = c
 
-	return &c
+	return c
 }
 
 func (cs *ClientStore) RemoveClient(id ClientID) {

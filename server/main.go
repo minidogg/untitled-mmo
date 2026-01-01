@@ -42,13 +42,13 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 	client := Clients.GenerateClientFromSocket(c)
 	for {
 		var msg Packet
+		fmt.Println(msg)
 		err := c.ReadJSON(&msg)
 		if err != nil {
 			log.Println("read:", err)
 			Clients.RemoveClient(client.ID)
 			break
 		}
-		fmt.Println(msg)
 
 		switch msg.Type {
 
