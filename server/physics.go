@@ -4,12 +4,15 @@ const (
 	TicksPerSecond = 60
 	TileSize       = 16
 
-	Gravity      = -0.15
-	Accel        = 0.8
-	Friction     = 0.82
-	MaxSpeedX    = 10.0
-	JumpImpulse  = 90.0
-	MaxFallSpeed = 5.0
+	Gravity          = -0.32
+	JumpGravityScale = 0.9
+	Accel            = 0.8
+	Friction         = 0.8
+	MaxSpeedX        = 2.2
+	JumpImpulse      = 5.0
+	JumpCut          = 0.4
+	MaxFallSpeed     = 5.0
+	MaxJumpTicks     = 7
 )
 
 type Input struct {
@@ -29,6 +32,7 @@ func Clamp(val, min, max float32) float32 {
 }
 
 func (p *Entity) StepPhysics(cmap CollisionMap) {
+	// Input
 	if p.Input.Left {
 		p.Velocity.X -= Accel
 	}
@@ -39,43 +43,69 @@ func (p *Entity) StepPhysics(cmap CollisionMap) {
 	p.Velocity.X = Clamp(p.Velocity.X, -MaxSpeedX, MaxSpeedX)
 
 	if !p.Input.Left && !p.Input.Right {
-		p.Velocity.X = p.Velocity.X * Friction
+		p.Velocity.X *= Friction
 	}
 
-	p.Velocity.Y += Gravity
+	// Gravity and jump
+	if p.Velocity.Y > 0 && p.Input.Jump && p.JumpTicks < MaxJumpTicks {
+		// reduced gravity while holding jump
+		p.Velocity.Y += Gravity * JumpGravityScale
+		p.JumpTicks++
+	} else {
+		p.Velocity.Y += Gravity
+	}
+
 	if p.Velocity.Y < -MaxFallSpeed {
-		p.Velocity.Y = MaxFallSpeed
+		p.Velocity.Y = -MaxFallSpeed
 	}
 
+	/* -------- JUMP START -------- */
 	if p.Input.Jump && p.State.Grounded {
 		p.Velocity.Y = JumpImpulse
 		p.State.Grounded = false
+		p.JumpTicks = 0
 	}
 
-	p.Position.X += p.Velocity.X
+	/* -------- JUMP CUT -------- */
+	if !p.Input.Jump && p.Velocity.Y > 0 {
+		p.Velocity.Y *= JumpCut
+	}
+
+	/* -------- MOVE -------- */
 	p.Position.Y += p.Velocity.Y
 	p.State.Grounded = false
 
-	// dont ask me how this works
 	tileW, tileH := float32(TileSize), float32(TileSize)
+
+	/* -------- VERTICAL COLLISION -------- */
 	for _, t := range cmap {
 		if CheckCollision(p.Position, p.Size.X, p.Size.Y, t.X, t.Y, tileW, tileH) {
-			if p.Velocity.Y > 0 && p.Position.Y+p.Size.Y > t.Y && p.Position.Y < t.Y {
-				p.Position.Y = t.Y - p.Size.Y
-				p.Velocity.Y = 0
-				p.State.Grounded = true
-			} else if p.Velocity.Y < 0 && p.Position.Y < t.Y+tileH && p.Position.Y+p.Size.Y > t.Y+tileH {
+			if p.Velocity.Y < 0 {
+				// falling onto tile
 				p.Position.Y = t.Y + tileH
 				p.Velocity.Y = 0
+				p.State.Grounded = true
+				p.JumpTicks = 0
+			} else if p.Velocity.Y > 0 {
+				// hit head
+				p.Position.Y = t.Y - p.Size.Y
+				p.Velocity.Y = 0
 			}
+		}
+	}
 
-			if p.Velocity.X > 0 && p.Position.X+p.Size.X > t.X && p.Position.X < t.X {
+	/* -------- HORIZONTAL MOVE -------- */
+	p.Position.X += p.Velocity.X
+
+	/* -------- HORIZONTAL COLLISION -------- */
+	for _, t := range cmap {
+		if CheckCollision(p.Position, p.Size.X, p.Size.Y, t.X, t.Y, tileW, tileH) {
+			if p.Velocity.X > 0 {
 				p.Position.X = t.X - p.Size.X
-				p.Velocity.X = 0
-			} else if p.Velocity.X < 0 && p.Position.X < t.X+tileW && p.Position.X+p.Size.X > t.X+tileW {
+			} else if p.Velocity.X < 0 {
 				p.Position.X = t.X + tileW
-				p.Velocity.X = 0
 			}
+			p.Velocity.X = 0
 		}
 	}
 }

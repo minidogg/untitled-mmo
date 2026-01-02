@@ -47,8 +47,9 @@ type Entity struct {
 	EntityType EntityType  `json:"entity_type"`
 	EntityData interface{} `json:"entity_data"`
 
-	Dirty  bool
-	Remove bool
+	Dirty     bool
+	Remove    bool
+	JumpTicks int
 }
 
 type WorldType int
@@ -79,8 +80,9 @@ type CollisionMap []Vec2
 
 // World Manager
 type WorldManager struct {
-	BaseWorlds   map[string]World
-	ActiveWorlds map[string]World
+	BaseWorlds    map[string]World
+	ActiveWorlds  map[string]World
+	EntityCounter EntityID
 }
 
 func (wm *WorldManager) LoadWorld(file_path string) World {
@@ -158,7 +160,9 @@ func (wm *WorldManager) CreateEntity(entityData *Entity, worldName, roomName str
 	room.mu.Lock()
 	defer room.mu.Unlock()
 
+	entityData.ID = wm.EntityCounter
 	room.Entities = append(room.Entities, entityData)
+	wm.EntityCounter++
 }
 
 func (r *Room) BroadcastSnapshot(tick uint64) {

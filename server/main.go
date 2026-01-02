@@ -42,8 +42,8 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 	client := Clients.GenerateClientFromSocket(c)
 	for {
 		var msg Packet
-		fmt.Println(msg)
 		err := c.ReadJSON(&msg)
+		fmt.Println(msg)
 		if err != nil {
 			log.Println("read:", err)
 			Clients.RemoveClient(client.ID)
@@ -75,8 +75,8 @@ func socketHandler(w http.ResponseWriter, r *http.Request) {
 						Client:     client,
 						EntityType: PlayerEntity,
 						Size: Vec2{
-							X: 13.0,
-							Y: 21.0,
+							X: 12.0,
+							Y: 20.0,
 						},
 					}
 
